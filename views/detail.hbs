@@ -1,0 +1,151 @@
+<h1>{{title}}</h1>
+{{#with post}}
+<h2 class="text-xl">{{title}}</h2>
+<div>
+    작성자 : <b>{{writer}}</b>
+</div>
+<div>
+    조회수 : {{hits}} | 작성일시 : {{dateString createdDt}}
+    <button onclick="modifyPost()">수정</button>
+    <button onclick="deletePost()">삭제</button>
+</div>
+<div>
+    <pre>{{content}}</pre>
+</div>
+
+<section>
+    <div>
+        <h3>{{lengthOfList comments}}개의 댓글이 있습니다.</h3>
+    </div>
+
+    <form method="post" action="/write-comment">
+    <input type="hidden" name="id"  value="{{_id}}"/>
+    <div>
+        <div>
+            <input type="text" name="name" placeholder="이름">
+            <input type="password" name="password" placeholder="비밀번호">
+        </div>
+        <div>
+            <textarea cols="40" rows="3" name="comment" placeholder="댓글을 입력해주세요">
+
+            </textarea>
+            <br/><br/><button>댓글 쓰기</button>
+        </div>
+    </div>
+    </form>
+</section>
+
+<section>
+    {{#each comments}}
+    <div>
+        <div>
+            작성자 : <b>{{name}}</b>
+        </div>
+        <div>
+            작성일시 : {{dateString createdDt}}
+            <button onclick="deleteComment(`{{idx}}`)">삭제</button>
+        </div>
+    </div>
+    <div>
+        <pre>{{comment}}</pre>
+    </div>
+    {{/each}}
+</section>
+{{/with}}
+<footer>
+    <div>
+        <a href="/">목록으로</a>
+    </div>
+</footer>
+
+<script>
+    const postOption = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }
+
+  async function modifyPost() {
+    const password = prompt("패스워드를 입력해주세요");
+    // ❶ 프롬프트에서 취소를 누른 경우 처리 
+    if (!password) {
+      return;
+    }
+
+    // ❷ check-password API 실행 
+    const result = await fetch("/check-password", {
+      ...postOption,
+      body: JSON.stringify({ id: "{{post._id}}", password })
+    });
+
+    // ❸ json 함수를 실행하는 경우도 await를 해줘야 함 
+    const data = await result.json();
+
+    // ❹ 패스워드가 맞는 경우 수정 페이지로 이동 
+    if (data.isExist) {
+      document.location = "/modify/{{post._id}}"
+    } else {
+      alert("패스워드가 올바르지 않습니다.");
+    }
+  }
+
+  const deletOption = {
+            method : "DELETE",
+            headers : {
+                "Content-Type" : "application/json"
+            },
+        }
+
+    async function deletePost(){
+        //프롬포트 값 입력받기
+        const password = prompt("삭제하려면 패스워드를 입력해주세요.");
+        //프롬포트에서 취소를 누른 경우 처리
+        if(!password){
+            return;
+        }
+
+        //fetch API를 사용해 delete API 호출
+        const result = await fetch("/delete", {
+            ...deletOption,
+            body: JSON.stringify({ id: "{{post._id}}", password})
+        });
+
+        //delete API 결과에 따라 다른 메세지 출력
+        const data = await result.json();
+        if (!data.isSuccess){
+            alert("삭제에 실패했습니다. 패스워드를 확인해주세요");
+            return;
+        }
+        document.location = "/";
+        
+
+    }
+
+     async function deleteComment(idx){
+        //프롬포트 값 입력받기
+        const password = prompt("삭제하려면 패스워드를 입력해주세요.");
+        //프롬포트에서 취소를 누른 경우 처리
+        if(!password){
+            return;
+        }
+
+        //delete-comment API 실행
+        const result = await fetch("/delete-comment", {
+            ...deletOption,
+            body: JSON.stringify({ id: "{{post._id}}",idx, password})
+        });
+
+        //댓글 삭제 실패 시 메세지 띄우고 함수 실행 종료
+        const data = await result.json();
+        if (!data.isSuccess){
+            alert("삭제에 실패했습니다. 패스워드를 확인해주세요");
+            return;
+        }
+        // 성공 시 메세지 띄우고 화면 리프레시
+        alert("삭제 성공!");
+        document.location.reload();
+        
+
+    }
+</script>
